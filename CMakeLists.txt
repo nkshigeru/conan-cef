@@ -31,7 +31,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CEF_ROOT}/cmake")
 message(STATUS "MOUDLE PATH: ${CMAKE_MODULE_PATH}")
 
 # Load the CEF configuration (executes FindCEF.cmake).
-# find_package(CEF REQUIRED)
+find_package(CEF REQUIRED)
 
 # Path to the include directory.
 set(CEF_INCLUDE_PATH "${CEF_ROOT}")

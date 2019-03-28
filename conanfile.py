@@ -103,7 +103,7 @@ class CEFConan(ConanFile):
 
     def _configure_cmake(self):
         cmake = CMake(self)
-        cmake.definitions["CEF_ROOT"] = self._source_subfolder
+        cmake.definitions["CEF_ROOT"] = os.path.join(self.source_folder, self._source_subfolder)
         cmake.definitions["USE_SANDBOX"] = "ON" if self.options.use_sandbox else "OFF"
 
         cmake.configure(build_folder=self._build_subfolder)
