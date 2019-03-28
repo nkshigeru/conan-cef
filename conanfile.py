@@ -55,9 +55,6 @@ class CEFConan(ConanFile):
         os.rename(self.get_cef_distribution_name(), self._source_subfolder)
 
         cmake_vars_file = "{}/cmake/cef_variables.cmake".format(self._source_subfolder)
-        if self.settings.compiler == "Visual Studio" and not (self.settings.compiler.runtime == "MT" or self.settings.compiler.runtime == "MTd"):
-            tools.replace_in_file(cmake_vars_file, "/MT           # Multithreaded release runtime", "/MD           # Multithreaded release runtime")
-            tools.replace_in_file(cmake_vars_file, "/MDd          # Multithreaded debug runtime", "/MDd          # Multithreaded debug runtime")
 
         #
         # Clang Patch, for Linux & MacOS (should be theoretically not necessary with CEF >= 2987)
@@ -71,8 +68,6 @@ class CEFConan(ConanFile):
                   -Wno-undefined-var-template   # Don't warn about potentially uninstantiated static members
                   )
             endif()""")
-
-        tools.replace_in_file(cmake_vars_file, 'set(CEF_DEBUG_INFO_FLAG "/Zi"', 'set(CEF_DEBUG_INFO_FLAG "{}"'.format(self.options.debug_info_flag_vs))
 
     def system_requirements(self):
         if self.settings.os == "Linux" and tools.os_info.is_linux:
@@ -105,6 +100,9 @@ class CEFConan(ConanFile):
         cmake = CMake(self)
         cmake.definitions["CEF_ROOT"] = os.path.join(self.source_folder, self._source_subfolder)
         cmake.definitions["USE_SANDBOX"] = "ON" if self.options.use_sandbox else "OFF"
+        if self.settings.compiler == "Visual Studio":
+            cmake.definitions["CEF_RUNTIME_LIBRARY_FLAG"] = "/" + str(self.settings.compiler.runtime)
+            cmake.definitions["CEF_DEBUG_INFO_FLAG"] = self.options.debug_info_flag_vs
 
         cmake.configure(build_folder=self._build_subfolder)
         return cmake
