@@ -114,9 +114,6 @@ class CEFConan(ConanFile):
         cmake.build()
 
     def package(self):
-        cmake = self._configure_cmake()
-        cmake.install()
-
         # Copy headers
         self.copy('*', dst='include/include', src='{}/include'.format(self._source_subfolder))
 
