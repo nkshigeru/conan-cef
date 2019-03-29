@@ -132,7 +132,13 @@ class CEFConan(ConanFile):
             if self.options.use_sandbox:
                 self.copy("chrome-sandbox", dst="bin", src=dis_folder, keep_path=False)
             self.copy("*cef_dll_wrapper.a", dst="lib", keep_path=False)
-        if self.settings.os == "Windows":
+        elif self.settings.os == "Macos":
+            # CEF binaries: (Taken from cmake/cef_variables)
+            self.copy("Chromium Embedded Framework.framework/*", src=dis_folder, symlinks=True)
+            if self.options.use_sandbox:
+                self.copy("cef-sandbox.a", dst="bin", src=dis_folder, keep_path=False)
+            self.copy("*cef_dll_wrapper.a", dst="lib", keep_path=False)
+        elif self.settings.os == "Windows":
             # CEF binaries: (Taken from cmake/cef_variables)
             self.copy("*.dll", dst="bin", src=dis_folder, keep_path=False)
             self.copy("libcef.lib", dst="lib", src=dis_folder, keep_path=False)
@@ -143,7 +149,12 @@ class CEFConan(ConanFile):
             self.copy("*cef_dll_wrapper.lib", dst="lib", keep_path=False)  # libcef_dll_wrapper is somewhere else
 
     def package_info(self):
-        if self.settings.compiler == "Visual Studio":
+        if self.settings.os == "Macos":
+            self.cpp_info.libs.append("cef_dll_wrapper")
+            f_location = '-F "%s"' % self.package_folder
+            self.cpp_info.exelinkflags.extend([f_location, '-framework "Chromium Embedded Framework"'])
+            self.cpp_info.sharedlinkflags = self.cpp_info.exelinkflags
+        elif self.settings.compiler == "Visual Studio":
             self.cpp_info.libs = ["libcef_dll_wrapper", "libcef"]
         else:
             self.cpp_info.libs = ["cef_dll_wrapper", "cef"]

@@ -3,7 +3,7 @@ import os
 
 
 class ProtobufTestConan(ConanFile):
-    settings = "os", "compiler", "build_type", "arch"
+    settings = "os", "compiler", "build_type", "arch", "cppstd"
     generators = "cmake"
 
     def build(self):
@@ -19,4 +19,7 @@ class ProtobufTestConan(ConanFile):
         self.copy("*", "bin", "bin")
 
     def test(self):
-        self.run(os.path.join(".", "bin", "cefsimple"))
+        if self.settings.os == "Macos":
+            self.run("./bin/cefsimple.app/Contents/MacOS/cefsimple")
+        else:
+            self.run(os.path.join(".", "bin", "cefsimple"))
