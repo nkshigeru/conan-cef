@@ -4,7 +4,8 @@ import os
 
 class CEFConan(ConanFile):
     name = "cef"
-    version = "3.3578.1860.g36610bd"
+    version = "73.1.12"
+    version_full = "73.1.12+gee4b49f+chromium-73.0.3683.75"
     description = "The Chromium Embedded Framework (CEF) is an open source framework for embedding a web browser engine which is based on the Chromium core"
     topics = ("conan", "cef", "chromium", "chromium-embedded-framework")
     url = "https://github.com/bincrafters/conan-cef"
@@ -40,7 +41,7 @@ class CEFConan(ConanFile):
             platform += "32"
         else:
             platform += "64"
-        return "cef_binary_%s_%s" % (self.version, platform)
+        return "cef_binary_%s_%s" % (self.version_full, platform)
 
     # def config(self):
         # if self.settings.os == "Windows" and self.settings.compiler == "Visual Studio" and self.settings.compiler.version != "14":
@@ -49,25 +50,15 @@ class CEFConan(ConanFile):
     def _download(self):
         self.output.info("Downloading CEF prebuilts from opensource.spotify.com/cefbuilds/index.html")
 
-        cef_download_filename ="{}.tar.bz2".format(self.get_cef_distribution_name())
+        cef_download_filename ="{}.tar.bz2".format(self.get_cef_distribution_name()).replace("+", "%2B")
         archive_url = "http://opensource.spotify.com/cefbuilds/{}".format(cef_download_filename)
         tools.get(archive_url)
         os.rename(self.get_cef_distribution_name(), self._source_subfolder)
-
-        cmake_vars_file = "{}/cmake/cef_variables.cmake".format(self._source_subfolder)
-
-        #
-        # Clang Patch, for Linux & MacOS (should be theoretically not necessary with CEF >= 2987)
-        #
-        if self.settings.compiler == "clang":
-            tools.replace_in_file(cmake_vars_file, 'include(CheckCXXCompilerFlag)', """include(CheckCXXCompilerFlag)
-
-              CHECK_CXX_COMPILER_FLAG(-Wno-undefined-var-template COMPILER_SUPPORTS_NO_UNDEFINED_VAR_TEMPLATE)
-              if(COMPILER_SUPPORTS_NO_UNDEFINED_VAR_TEMPLATE)
-                list(APPEND CEF_CXX_COMPILER_FLAGS
-                  -Wno-undefined-var-template   # Don't warn about potentially uninstantiated static members
-                  )
-            endif()""")
+        insert_position = "project(cef)"
+        tools.replace_in_file("{}/CMakeLists.txt".format(self._source_subfolder),
+            insert_position, insert_position + '''
+include(${CMAKE_BINARY_DIR}/../conanbuildinfo.cmake)
+conan_basic_setup()''')
 
     def system_requirements(self):
         if self.settings.os == "Linux" and tools.os_info.is_linux:
@@ -98,19 +89,18 @@ class CEFConan(ConanFile):
 
     def _configure_cmake(self):
         cmake = CMake(self)
-        cmake.definitions["CEF_ROOT"] = os.path.join(self.source_folder, self._source_subfolder)
         cmake.definitions["USE_SANDBOX"] = "ON" if self.options.use_sandbox else "OFF"
         if self.settings.compiler == "Visual Studio":
             cmake.definitions["CEF_RUNTIME_LIBRARY_FLAG"] = "/" + str(self.settings.compiler.runtime)
             cmake.definitions["CEF_DEBUG_INFO_FLAG"] = self.options.debug_info_flag_vs
 
-        cmake.configure(build_folder=self._build_subfolder)
+        cmake.configure(source_folder=self._source_subfolder, build_folder=self._build_subfolder)
         return cmake
 
     def build(self):
         self._download()
         cmake = self._configure_cmake()
-        cmake.build()
+        cmake.build(target="libcef_dll_wrapper")
 
     def package(self):
         # Copy headers
@@ -119,10 +109,7 @@ class CEFConan(ConanFile):
         # Copy all stuff from the Debug/Release folders in the downloaded cef bundle:
         dis_folder = "{}/{}".format(self._source_subfolder, self.settings.build_type)
         res_folder = "{}/Resources".format(self._source_subfolder)
-        # resource files: taken from cmake/cef_variables (on macosx we would need to convert the COPY_MACOSX_RESOURCES() function)
-        cef_resources = ["cef.pak", "cef_100_percent.pak", "cef_200_percent.pak", "cef_extensions.pak", "devtools_resources.pak", "icudtl.dat", "locales*"]
-        for res in cef_resources:
-            self.copy(res, dst="bin", src=res_folder, keep_path=True)
+        self.copy("*.*", dst="bin", src=res_folder)
 
         if self.settings.os == "Linux":
             # CEF binaries: (Taken from cmake/cef_variables)
@@ -139,14 +126,10 @@ class CEFConan(ConanFile):
                 self.copy("cef-sandbox.a", dst="bin", src=dis_folder, keep_path=False)
             self.copy("*cef_dll_wrapper.a", dst="lib", keep_path=False)
         elif self.settings.os == "Windows":
-            # CEF binaries: (Taken from cmake/cef_variables)
-            self.copy("*.dll", dst="bin", src=dis_folder, keep_path=False)
-            self.copy("libcef.lib", dst="lib", src=dis_folder, keep_path=False)
-            self.copy("natives_blob.bin", dst="bin", src=dis_folder, keep_path=False)
-            self.copy("snapshot_blob.bin", dst="bin", src=dis_folder, keep_path=False)
-            if self.options.use_sandbox:
-                self.copy("cef_sandbox.lib", dst="lib", src=dis_folder, keep_path=False)
-            self.copy("*cef_dll_wrapper.lib", dst="lib", keep_path=False)  # libcef_dll_wrapper is somewhere else
+            self.copy("*.dll", dst="bin", src=dis_folder)
+            self.copy("*.lib", dst="lib", src=dis_folder)
+            self.copy("*.bin", dst="bin", src=dis_folder)
+            self.copy("*.lib", dst="lib", src="{}/lib".format(self._build_subfolder))
 
     def package_info(self):
         if self.settings.os == "Macos":
