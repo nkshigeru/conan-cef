@@ -15,7 +15,7 @@ class CEFConan(ConanFile):
     exports_sources = ["CMakeLists.txt"]
     generators = "cmake"
 
-    settings = "os", "compiler", "build_type", "arch"
+    settings = "os", "compiler", "build_type", "arch", "cppstd"
     options = {
         "use_sandbox": [True, False],
         "debug_info_flag_vs": ["-Zi", "-Z7"]
@@ -45,6 +45,10 @@ class CEFConan(ConanFile):
     # def config(self):
         # if self.settings.os == "Windows" and self.settings.compiler == "Visual Studio" and self.settings.compiler.version != "14":
             # self.options.remove("use_sandbox") # it requires to be built with that exact version for sandbox support
+    def config(self):
+        if "libcxx" in self.settings.compiler.fields:
+            if self.settings.cppstd == "None":
+                self.settings.cppstd = "11"
 
     def _download(self):
         self.output.info("Downloading CEF prebuilts from opensource.spotify.com/cefbuilds/index.html")
