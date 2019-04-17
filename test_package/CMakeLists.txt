@@ -107,6 +107,9 @@ if(OS_MACOSX)
   add_executable(${CEF_TARGET} MACOSX_BUNDLE
     ${CEFSIMPLE_RESOURCES_SRCS} ${CEFSIMPLE_SRCS})
   target_link_libraries(${CEF_TARGET} ${CONAN_LIBS} ${Cocoa_FRAMEWORK})
+  set_target_properties(${CEF_TARGET} PROPERTIES
+    MACOSX_BUNDLE_GUI_IDENTIFIER simple
+  )
 
   add_custom_command(TARGET ${CEF_TARGET} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

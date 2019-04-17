@@ -9,6 +9,7 @@
 #include "simple_handler.h"
 #include "include/cef_application_mac.h"
 #include "include/wrapper/cef_helpers.h"
+#include "include/wrapper/cef_library_loader.h"
 
 // Receives notifications from the application.
 @interface SimpleAppDelegate : NSObject<NSApplicationDelegate>
@@ -108,6 +109,11 @@
 
 // Entry point function for the browser process.
 int main(int argc, char* argv[]) {
+
+  CefScopedLibraryLoader library_loader;
+  if (!library_loader.LoadInMain())
+    return 1;
+
   // Provide CEF with command-line arguments.
   CefMainArgs main_args(argc, argv);
 
