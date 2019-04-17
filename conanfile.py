@@ -134,9 +134,6 @@ conan_basic_setup()''')
     def package_info(self):
         if self.settings.os == "Macos":
             self.cpp_info.libs.append("cef_dll_wrapper")
-            f_location = '-F "%s"' % self.package_folder
-            self.cpp_info.exelinkflags.extend([f_location, '-framework "Chromium Embedded Framework"'])
-            self.cpp_info.sharedlinkflags = self.cpp_info.exelinkflags
         elif self.settings.compiler == "Visual Studio":
             self.cpp_info.libs = ["libcef_dll_wrapper", "libcef"]
         else:
