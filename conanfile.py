@@ -1,5 +1,6 @@
 from conans import ConanFile, CMake, tools
 import os
+import shutil
 
 
 class CEFConan(ConanFile):
@@ -124,11 +125,11 @@ conan_basic_setup()''')
                 self.copy("chrome-sandbox", dst="bin", src=dis_folder, keep_path=False)
             self.copy("*cef_dll_wrapper.a", dst="lib", keep_path=False)
         elif self.settings.os == "Macos":
-            # CEF binaries: (Taken from cmake/cef_variables)
             self.copy("Chromium Embedded Framework.framework/*", src=dis_folder, symlinks=True)
             if self.options.use_sandbox:
-                self.copy("cef-sandbox.a", dst="bin", src=dis_folder, keep_path=False)
-            self.copy("*cef_dll_wrapper.a", dst="lib", keep_path=False)
+                shutil.copy(os.path.join(dis_folder, "cef_sandbox.a"), "libcef_sandbox.a")
+                self.copy("libcef_sandbox.a", dst="lib", keep_path=False)
+            self.copy("libcef_dll_wrapper.a", dst="lib", src="{}/lib".format(self._build_subfolder), keep_path=False)
         elif self.settings.os == "Windows":
             self.copy("*.dll", dst="bin", src=dis_folder)
             self.copy("*.lib", dst="lib", src=dis_folder)
@@ -138,6 +139,8 @@ conan_basic_setup()''')
     def package_info(self):
         if self.settings.os == "Macos":
             self.cpp_info.libs.append("cef_dll_wrapper")
+            if self.options.use_sandbox:
+                self.cpp_info.libs.append('cef_sandbox')
         elif self.settings.compiler == "Visual Studio":
             self.cpp_info.libs = ["libcef_dll_wrapper", "libcef"]
         else:
