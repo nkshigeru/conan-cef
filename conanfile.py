@@ -44,13 +44,16 @@ class CEFConan(ConanFile):
             platform += "64"
         return "cef_binary_%s_%s" % (self.version_full, platform)
 
-    # def config(self):
-        # if self.settings.os == "Windows" and self.settings.compiler == "Visual Studio" and self.settings.compiler.version != "14":
-            # self.options.remove("use_sandbox") # it requires to be built with that exact version for sandbox support
     def config(self):
-        if "libcxx" in self.settings.compiler.fields:
-            if self.settings.cppstd == "None":
-                self.settings.cppstd = "11"
+        if self.settings.os == "Windows" and self.settings.compiler == "Visual Studio":
+            if self.settings.compiler.version != "14":
+                # self.options.remove("use_sandbox") # it requires to be built with that exact version for sandbox support
+                pass
+        else:
+            self.options.remove("debug_info_flag_vs")
+        # if "libcxx" in self.settings.compiler.fields:
+        #     if self.settings.cppstd == "None":
+        #         self.settings.cppstd = "11"
 
     def _download(self):
         self.output.info("Downloading CEF prebuilts from opensource.spotify.com/cefbuilds/index.html")
